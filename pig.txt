@@ -12,9 +12,10 @@ sales  = LOAD '/user/cloudera/sales/' USING PigStorage(',') as
         (chavevendedor:int, chavecliente:int, chaveproduto:int,  chavetempo:int, quantidade:int, valorunitario:float, valortotal:float,         desconto:float);
 
 
-# Show Data
+# SCaracterística de transformações LAZY do pig - utilizar dump.
 
 dump dimcliente; 
+dump sales;
 
 
 #limitar 10 registros
