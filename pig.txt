@@ -1,27 +1,60 @@
-#logar grunt
+# Utilizar Shell (Grunt)
+
 pig -x mapreduce
-#carregar dados do HDFS
-dimensaocliente = LOAD '/user/cloudera/dimensaocliente/' USING PigStorage(',') as 
-(chavecliente:int, idcliente:int, cliente:chararray, estado:chararray, sexo:chararray, status:chararray, datainiciovalidade:datetime, datafimvalidade:datetime);   
-fatovendas  = LOAD '/user/cloudera/fatovendas/' USING PigStorage(',') as
-(chavevendas:int, chavevendedor:int, chavecliente:int, chaveproduto:int,  chavetempo:int, quantidade:int, valorunitario:float, valortotal:float, desconto:float);
-#exibir os dados
-dump dimensaocliente; 
+
+# Carregar dados do Ecossistema hadoop (HDFS)
+
+dimcliente = LOAD '/user/cloudera/dimcliente/' USING PigStorage(',') as 
+             (idcliente:int, cliente:chararray, estado:chararray, sexo:chararray, status:chararray,
+             datainiciovalidade:datetime, datafimvalidade:datetime);   
+
+sales  = LOAD '/user/cloudera/sales/' USING PigStorage(',') as
+        (chavevendedor:int, chavecliente:int, chaveproduto:int,  chavetempo:int, quantidade:int, valorunitario:float, valortotal:float,         desconto:float);
+
+
+# Show Data
+
+dump dimcliente; 
+
+
 #limitar 10 registros
-dim10 = limit dimensaocliente 10;
+dim10 = limit dimcliente 10;
 dump dim10;
-#schema
-describe dimensaocliente;
-#agrupa por status
-clienteporstatus = GROUP dimensaocliente by status;
-#join
-juncaocliente = JOIN fatovendas by chavecliente, dimensaocliente by chavecliente;
+
+# Schema
+describe dimcliente;
+
+# Agrupa por status
+clienteporstatus = GROUP dimcliente by status;
+
+# Inner Join
+juncaocliente = JOIN sales by idcliente, dimcliente by idcliente;
+
+# Left Join
+juncaocliente = JOIN sales by idcliente, dimcliente by idcliente
+                LEFT OUTER, dimcliente by idcliente;
+
+# Chave Composta
+juncaocliente = JOIN sales by (CHAVE1, CHAVE2, CHAVE3), 
+                dimcliente by (CHAVE1, CHAVE2, CHAVE3);
+
 #filtro
-dimensaoclientePlatinum = FILTER dimensaocliente BY status == 'Platinum';
-#split - divide em duas rela��es
-SPLIT dimensaocliente into dimensaoGold if status=='Silver', dimensaoPlatinum if status=='Platinum';
+dimensaoclientePlatinum = FILTER dimcliente BY status == 'Platinum';
+
+#split - divide conjunto de dados - cada um com sua condição
+
+SPLIT dimcliente into dimensaoGold if status=='Gold', dimensaoPlatinum if status=='Platinum';
 DUMP dimensaoPlatinum
-#cliente ordenado
-dimensaoclienteorder = ORDER dimensaocliente BY cliente ASC;
-STORE dimensaoclientePlatinum INTO '/user/cloudera/pig/' USING PigStorage(',');
+
+# Cliente ordenado
+
+dimensaoclienteorder = ORDER dimcliente BY cliente ASC;
+
+# PERSISTIR DADOS - STORE
+# Pig faz operações em Memória - caso não utilize Store, as operações não serão persistidas.
+# Modo mapreduce - persiste dentro do HDFS por padrão
+
+STORE dimclientePlatinum INTO '/user/cloudera/pig/' USING PigStorage(',');
+
+
 
